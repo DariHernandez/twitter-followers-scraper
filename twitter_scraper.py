@@ -1,3 +1,4 @@
+from ast import excepthandler
 import os
 import time
 import csv
@@ -38,49 +39,71 @@ class TwitterScraper ():
 
     def __get_user_data (self):
         """Get general data of the current user"""
-
+        time.sleep (0.5)
         self.__scraper.refresh_selenium ()
 
+        data = []
+
         # selectors
-        selector_name = '[data-testid="UserName"] .css-901oao.r-1awozwy.r-1nao33i.r-6koalj.r-37j5jr.r-adyw6z.r-1vr29t4.r-135wba7.r-bcqeeo.r-1udh08x.r-qvutc0 > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0'
-        selector_user = '[data-testid="UserName"] .css-901oao.css-1hf3ou5.r-18u37iz.r-37j5jr.r-a023e6.r-16dba41.r-rjixqe.r-bcqeeo.r-qvutc0 > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0'
-        selector_profileimg = 'a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-1niwhzg.r-1loqt21.r-1pi2tsx.r-1ny4l3l.r-o7ynqc.r-6416eg.r-13qz1uu[href$="photo"]'
-        selector_description = '[data-testid="UserDescription"]'
-        selector_location = '[data-testid="UserProfileHeader_Items"] [data-testid="UserLocation"]'
-        selector_webpage = '[data-testid="UserProfileHeader_Items"] [data-testid="UserUrl"]'
-        selector_joindate = '[data-testid="UserProfileHeader_Items"] [data-testid="UserJoinDate"]'
-        selector_following = 'a[href$="/following"] > span:nth-child(1)'
-        selector_followers = 'a[href$="/followers"] > span:nth-child(1)'
+        selectors = {
+            "name": {
+                "selector": '[data-testid="UserName"] .css-901oao.r-1awozwy.r-1nao33i.r-6koalj.r-37j5jr.r-adyw6z.r-1vr29t4.r-135wba7.r-bcqeeo.r-1udh08x.r-qvutc0 > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0',
+                "is_link": False,
+            },
+            "user": {
+                "selector": '[data-testid="UserName"] .css-901oao.css-1hf3ou5.r-18u37iz.r-37j5jr.r-a023e6.r-16dba41.r-rjixqe.r-bcqeeo.r-qvutc0 > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0',
+                "is_link": False,
+            },
+            "profileimg": {
+                "selector": 'a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-1niwhzg.r-1loqt21.r-1pi2tsx.r-1ny4l3l.r-o7ynqc.r-6416eg.r-13qz1uu[href$="photo"]',
+                "is_link": True,
+            },
+            "description": {
+                "selector": '[data-testid="UserDescription"]',
+                "is_link": False,
+            },
+            "location": {
+                "selector": '[data-testid="UserProfileHeader_Items"] [data-testid="UserLocation"]',
+                "is_link": False,
+            },
+            "webpage": {
+                "selector": '[data-testid="UserProfileHeader_Items"] [data-testid="UserUrl"]',
+                "is_link": False,
+            },
+            "joindate": {
+                "selector": '[data-testid="UserProfileHeader_Items"] [data-testid="UserJoinDate"]',
+                "is_link": False,
+            },
+            "following": {
+                "selector": 'a[href$="/following"] > span:nth-child(1)',
+                "is_link": False,
+            },
+            "followers": {
+                "selector": 'a[href$="/followers"] > span:nth-child(1)',
+                "is_link": False,
+            }
+        }
 
-        # Get data
-        name = self.__scraper.get_text (selector_name).strip()
-        user = self.__scraper.get_text (selector_user).strip()
-        profileimg = self.__scraper.get_attrib (selector_profileimg, "href").strip()
-        description = self.__scraper.get_text (selector_description).strip()
-        location = self.__scraper.get_text (selector_location).strip()
+        # Loop for each selector / elem
+        for selector_data in selectors.values ():
+            selector = selector_data["selector"]
+            is_link = selector_data["is_link"]
 
-        try:
-            webpage = self.__scraper.get_text (selector_webpage).strip()
-        except:
-            webpage = ""
-            
-        joindate = self.__scraper.get_text (selector_joindate).strip()
-        following = self.__scraper.get_text (selector_following).strip()
-        followers = self.__scraper.get_text (selector_followers).strip()
+            # Get data
+            if is_link:
+                text = self.__scraper.get_attrib (selector, "href")
+            else:
+                text = self.__scraper.get_text (selector)
 
-        # Return data
-        data = [
-            name,
-            user,
-            profileimg,
-            description,
-            location,
-            webpage,
-            joindate,
-            following,
-            followers
-        ]
+            # Clean text
+            if text:
+                text = text.strip()
+            else:
+                text = ""
 
+            # Save in list
+            data.append (text)
+        
         return data
 
     def __get_followers (self):
