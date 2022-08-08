@@ -1,8 +1,6 @@
-from ast import excepthandler
-from genericpath import isfile
 import os
 import time
-import csv
+from tqdm import tqdm
 from logs import logger
 from scraping_manager.automate import Web_scraping
 from spreadsheet_manager.xlsx import SS_manager
@@ -113,10 +111,14 @@ class TwitterScraper ():
             list: twitter users
         """
 
+        logger.info ("Getting follower list...")
+
         # Go to followers page
+        time.sleep (2)
         selector_followers_link = 'a[href$="/followers"]'
         self.__scraper.click_js (selector_followers_link)
         time.sleep (2)
+        self.__scraper.refresh_selenium ()
 
         followers = []
 
@@ -195,7 +197,9 @@ class TwitterScraper ():
         # Loop for each user
         for user in self.__users:
 
-            # Set user poage
+            logger.info (f"Current user: {user}")
+
+            # Set user page
             user_page = f"https://twitter.com/{user.replace('@', '')}"
             self.__scraper.set_page (user_page)
 
@@ -207,7 +211,8 @@ class TwitterScraper ():
 
             # Get followers
             followers = self.__get_followers ()
-            for follower in followers:
+            logger.info ("Scraping followers data:")
+            for follower in tqdm(followers):
 
                 # Open follower profile
                 follower_page = f"https://twitter.com/{follower.replace('@', '')}"
@@ -224,6 +229,9 @@ class TwitterScraper ():
             
             # Save global data
             self.__followers_data += followers_data
+
+            logger.info ("Done")
+            logger.info ("")
 
         # Save summary file
         self.__set_excel ("all followers", "followers")
