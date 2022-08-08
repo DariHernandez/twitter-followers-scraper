@@ -33,6 +33,9 @@ class TwitterScraper ():
         self.__home_page = "https://twitter.com/"
         self.__scraper = Web_scraping (chrome_folder=chrome_folder, start_killing=True)
 
+        # Global followers_data
+        self.__followers_data = []
+
 
     def __get_user_data (self, from_user):
         """Get general data of the current user"""
@@ -218,6 +221,14 @@ class TwitterScraper ():
             # Save data in excel
             self.__set_excel (user, "followers")
             self.__save_excel (followers_data)
-            print ()
+            
+            # Save global data
+            self.__followers_data += followers_data
+
+        # Save summary file
+        self.__set_excel ("all followers", "followers")
+        self.__save_excel (self.__followers_data)
+
+
 
 
