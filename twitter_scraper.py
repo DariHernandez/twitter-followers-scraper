@@ -1,4 +1,5 @@
 from ast import excepthandler
+from genericpath import isfile
 import os
 import time
 import csv
@@ -32,17 +33,13 @@ class TwitterScraper ():
         self.__home_page = "https://twitter.com/"
         self.__scraper = Web_scraping (chrome_folder=chrome_folder, start_killing=True)
 
-        # Connect to excel and clean last sheets
-        output_path = os.path.join (os.path.dirname(__file__), "data.xlsx")
-        self.__ss_manager = SS_manager (output_path)
-        self.__ss_manager.clean_workbook ()
 
-    def __get_user_data (self):
+    def __get_user_data (self, from_user):
         """Get general data of the current user"""
         time.sleep (0.5)
         self.__scraper.refresh_selenium ()
 
-        data = []
+        data = [from_user]
 
         # selectors
         selectors = {
@@ -162,17 +159,31 @@ class TwitterScraper ():
         return followers
         
 
-    def __set_sheet (self, output_sheet:str):
+    def __set_excel (self, file:str, sheet:str):
         """Create and set new sheet in excel file for save data"""
 
-        # Connect to google sheets
-        self.__ss_manager.create_get_sheet (output_sheet)
+        # Output xlsx file
+        output_path = os.path.join (os.path.dirname(__file__), "output", f"{file}.xlsx")
 
-    def __save_excel (self):
+        # Create
+        if not os.path.isfile (output_path):
+            file = open (output_path, "w+")
+            file.close ()
+
+        # Connect to excel and clean last sheets
+        self.__ss_manager = SS_manager (output_path)
+        self.__ss_manager.clean_workbook ()
+        self.__ss_manager.create_get_sheet (sheet)
+
+    def __save_excel (self, data):
         """Save data in current excel sheet"""
 
+        # Write heade
+        header = [["From user", "Name", "User", "Profile image", "Description", "Location", "Web page", "Join date", "Following", "Followers"]]
+        self.__ss_manager.write_data (header, 1, 1)
+
         # Write data in excel
-        self.__ss_manager.write_data (self.__tweets_data)
+        self.__ss_manager.write_data (data, 2, 1)
         self.__ss_manager.auto_width ()
         self.__ss_manager.save ()
 
@@ -185,11 +196,13 @@ class TwitterScraper ():
             user_page = f"https://twitter.com/{user.replace('@', '')}"
             self.__scraper.set_page (user_page)
 
-            # Get general user data
-            user_data = self.__get_user_data ()
+            followers_data = []
+
+            # Get main user data
+            user_data = self.__get_user_data (user)
+            followers_data.append (user_data)
 
             # Get followers
-            followers_data = []
             followers = self.__get_followers ()
             for follower in followers:
 
@@ -198,9 +211,13 @@ class TwitterScraper ():
                 self.__scraper.set_page (follower_page)
 
                 # Get follower data
-                follower_data = self.__get_user_data ()
+                follower_data = self.__get_user_data (user)
 
                 followers_data.append (follower_data)
 
+            # Save data in excel
+            self.__set_excel (user, "followers")
+            self.__save_excel (followers_data)
             print ()
+
 
