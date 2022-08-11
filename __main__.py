@@ -5,10 +5,10 @@ def main ():
     # Get credentials from config
     credentials = Config ()
     users = credentials.get ('users')
-    max_followers = credentials.get ('max_followers')
+    download_folder = credentials.get ('download_folder')
 
     # Instance of twitter scraper
-    twitter_scraper = TwitterScraper (users, max_followers)
+    twitter_scraper = TwitterScraper (users, download_folder)
     twitter_scraper.extract ()
 
 
