@@ -6,7 +6,7 @@ from scraping_manager.automate import Web_scraping
 from spreadsheet_manager.xlsx import SS_manager
 from selenium.webdriver.common.by import By
 
-class TwitterScraper ():
+class TwitterScraper (Web_scraping):
 
     def __init__ (self, users:list=[], download_folder=""):
         """Start scraper and setup options
@@ -25,17 +25,16 @@ class TwitterScraper ():
         # Chrome folder
         user_name = os.getlogin()
         chrome_folder = f"C:\\Users\\{user_name}\\AppData\\Local\\Google\\Chrome\\User Data"
+        # chrome_folder = "C:\\Users\\daria\\OneDrive\\Documentos\\chrome data"
 
         # Start browser
         self.__download_folder = download_folder
         self.__home_page = "https://www.vicinitas.io/"
-        self.__scraper = Web_scraping (chrome_folder=chrome_folder, 
-                                        start_killing=True, 
-                                        download_folder=self.__download_folder, 
-                                        web_page=self.__home_page)
 
-        # Global followers_data
-        self.__followers_data = []
+        super().__init__ (chrome_folder=chrome_folder, 
+                            start_killing=True, 
+                            download_folder=self.__download_folder,
+                            web_page=self.__home_page)
 
     def extract (self):
 
@@ -54,10 +53,10 @@ class TwitterScraper ():
             while True:
 
                 wait = True
-                self.__scraper.refresh_selenium ()
+                self.refresh_selenium ()
 
                 # Get current progress
-                progress = self.__scraper.get_text (selector_progress)
+                progress = self.get_text (selector_progress)
                 if progress:
                     progress_parts = list(map (lambda elem: elem.strip(), progress.split ("/")))
 
@@ -66,27 +65,29 @@ class TwitterScraper ():
                         wait = False
                 
                 if wait:
-                    time.sleep (20)
+                    time.sleep (5)
                     continue
                 else:
                     break 
 
             # Download file
             selector_download = "#info .btn.btn-success"
-            self.__scraper.click (selector_download)
-            time.sleep (5)
+            self.click (selector_download)
+            time.sleep (20)
 
-            # Return to main page
-            self.__scraper.set_page (self.__home_page)
+            # Go to home page
+            self.set_page (self.__home_page)
 
     def __download_files (self, user):
+        """Go to vicinitas main page and """
+
         # Search  user and download file
         selector_followers = "#r3"
         selector_search = "#tracker"
         selector_submit = "#free_btn"
-        self.__scraper.click_js (selector_followers)
-        self.__scraper.send_data (selector_search, user)
-        self.__scraper.click_js (selector_submit)
+        self.click_js (selector_followers)
+        self.send_data (selector_search, user)
+        self.click_js (selector_submit)
 
     def __requiere_autorization (self):
         
@@ -97,9 +98,9 @@ class TwitterScraper ():
         """
 
         time.sleep (2)
-        self.__scraper.refresh_selenium ()
+        self.refresh_selenium ()
         selector_login = "#btn_login"
-        text_login = self.__scraper.get_text (selector_login)
+        text_login = self.get_text (selector_login)
         if text_login:
             return True
         else:
@@ -111,12 +112,30 @@ class TwitterScraper ():
 
         # Login with twitter, if its required
         selector_login = "#btn_login"
-        self.__scraper.click (selector_login)
+        self.click (selector_login)
+        time.sleep (2)
 
-        # Validate if manual login its required
-        current_url = self.__scraper.driver.current_url
+        # Validate the current page
+        self.refresh_selenium ()
+        current_url = self.driver.current_url
         if "api.twitter.com" in current_url:
-            logger.warning ("Manual login or autorization is required.\nPlease login or autorize and press enter to continue.")
+
+            # Validate if the page required login
+            selector_sign_in = "#allow"
+            text_sign_in = self.get_attrib (selector_sign_in, "value")
+            if text_sign_in == "Sign In":
+
+                # Message and wait
+                logger.warning ("Manual login or is required.\nPlease login and press enter to continue.")
+                input ()
+
+                # Redirect to home page
+                current_url = self.driver.current_url
+                if "www.vicinitas.io" not in current_url:
+                    self.set_page (self.__home_page)
+            else:
+                # Click in autorize button
+                self.click_js (selector_sign_in)
 
     def __add_column (self):
         print ("done")
