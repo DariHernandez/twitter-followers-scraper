@@ -39,6 +39,8 @@ class TwitterScraper (Web_scraping):
     def extract (self):
 
         for user in self.__users:
+
+            logger.info (f"\nUser: {user}")
             
             # Search and download file
             self.__download_files (user)
@@ -46,9 +48,10 @@ class TwitterScraper (Web_scraping):
             # Validate if page requiered twitter autorization
             requiere_autorization = self.__requiere_autorization ()
             if requiere_autorization:
-                self.__autorize()
+                self.__autorize(user)
 
             # Wait for download file
+            logger.info (f"generating excel file...")
             selector_progress = "#info > b"
             while True:
 
@@ -71,6 +74,7 @@ class TwitterScraper (Web_scraping):
                     break 
 
             # Download file
+            logger.info (f"downloading excel file...")
             selector_download = "#info .btn.btn-success"
             self.click (selector_download)
             time.sleep (20)
@@ -82,6 +86,7 @@ class TwitterScraper (Web_scraping):
         """Go to vicinitas main page and """
 
         # Search  user and download file
+        logger.info (f"searching followers...")
         selector_followers = "#r3"
         selector_search = "#tracker"
         selector_submit = "#free_btn"
@@ -106,7 +111,7 @@ class TwitterScraper (Web_scraping):
         else:
             return False
 
-    def __autorize (self):
+    def __autorize (self, search_user):
         """ Autorize and detect if it requiered manual login o autorization
         """
 
@@ -129,10 +134,11 @@ class TwitterScraper (Web_scraping):
                 logger.warning ("Manual login or is required.\nPlease login and press enter to continue.")
                 input ()
 
-                # Redirect to home page
+                # Redirect to home page and search files
                 current_url = self.driver.current_url
                 if "www.vicinitas.io" not in current_url:
                     self.set_page (self.__home_page)
+                    self.__download_files (search_user)
             else:
                 # Click in autorize button
                 self.click_js (selector_sign_in)
