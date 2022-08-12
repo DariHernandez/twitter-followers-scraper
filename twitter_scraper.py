@@ -1,3 +1,4 @@
+from msilib.schema import File
 import os
 import time
 from tqdm import tqdm
@@ -25,12 +26,13 @@ class TwitterScraper (Web_scraping):
         # Chrome folder
         user_name = os.getlogin()
         chrome_folder = f"C:\\Users\\{user_name}\\AppData\\Local\\Google\\Chrome\\User Data"
-        # chrome_folder = "C:\\Users\\daria\\OneDrive\\Documentos\\chrome data"
 
-        # Start browser
+        # Class variables
         self.__download_folder = download_folder
         self.__home_page = "https://www.vicinitas.io/"
+        self.__followers_data = []
 
+        # Start browser with parent counstructor
         super().__init__ (chrome_folder=chrome_folder, 
                             start_killing=True, 
                             download_folder=self.__download_folder,
@@ -51,7 +53,7 @@ class TwitterScraper (Web_scraping):
                 self.__autorize(user)
 
             # Wait for download file
-            logger.info (f"generating excel file...")
+            logger.info (f"\tgenerating excel file...")
             selector_progress = "#info > b"
             while True:
 
@@ -74,19 +76,25 @@ class TwitterScraper (Web_scraping):
                     break 
 
             # Download file
-            logger.info (f"downloading excel file...")
+            logger.info (f"\tdownloading excel file...")
             selector_download = "#info .btn.btn-success"
             self.click (selector_download)
             time.sleep (20)
 
+            # Add GroupName column
+            self.__add_column (user)
+
             # Go to home page
             self.set_page (self.__home_page)
+
+        # Save summary file
+        self.__save_summary ()
 
     def __download_files (self, user):
         """Go to vicinitas main page and """
 
         # Search  user and download file
-        logger.info (f"searching followers...")
+        logger.info (f"\tsearching followers...")
         selector_followers = "#r3"
         selector_search = "#tracker"
         selector_submit = "#free_btn"
@@ -143,8 +151,57 @@ class TwitterScraper (Web_scraping):
                 # Click in autorize button
                 self.click_js (selector_sign_in)
 
-    def __add_column (self):
-        print ("done")
+    def __add_column (self, user):
+
+        logger.info ("\tadding GroupName column...")
+
+        # Find new file
+        download_files = os.listdir (self.__download_folder)
+        file = list(filter (lambda name: "done" not in name and ".xlsx" in name and ".xlsx#" not in name, download_files))[0]
+
+        # Open excel file
+        file_path = f"{self.__download_folder}\\{file}"
+        spreadsheet = SS_manager (file_path) 
+        spreadsheet.set_sheet ("Followers")
+
+        # Get data
+        data = spreadsheet.get_data ()
+
+        # Add new column to data
+        new_data = list(map (lambda row:[user, *row], data))
+
+        # Set column header
+        new_data[0][0] = "GroupName"
+
+        # Save new data
+        spreadsheet.write_data (new_data)
+        spreadsheet.save ()
+
+        # Rename file
+        new_file_path = file_path.replace(file, f"{file.replace('.xlsx', '')} - done.xlsx")
+        os.rename (file_path, new_file_path)
+
+        # Save current data
+        self.__followers_data += new_data
+
+    def __save_summary (self):
+        logger.info ("\nSaving summary file...")
+
+        # Open excel file
+        file_path = f"{self.__download_folder}\\all.xlsx"
+        spreadsheet = SS_manager (file_path) 
+        spreadsheet.create_get_sheet ("Followers")
+        spreadsheet.write_data (self.__followers_data)
+        spreadsheet.save ()
+
+        logger.info ("Done")
+
+
+
+        
+        
+
+        
         
 
 
