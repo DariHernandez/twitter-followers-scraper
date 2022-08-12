@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 
 class TwitterScraper (Web_scraping):
 
-    def __init__ (self, users:list=[], download_folder=""):
+    def __init__ (self, users:list=[], download_folder="", headless=False):
         """Start scraper and setup options
 
         Args:
@@ -36,7 +36,8 @@ class TwitterScraper (Web_scraping):
         super().__init__ (chrome_folder=chrome_folder, 
                             start_killing=True, 
                             download_folder=self.__download_folder,
-                            web_page=self.__home_page)
+                            web_page=self.__home_page,
+                            headless=headless)
 
     def extract (self):
 
@@ -153,8 +154,6 @@ class TwitterScraper (Web_scraping):
 
     def __add_column (self, user):
 
-        logger.info ("\tadding GroupName column...")
-
         # Find new file
         download_files = os.listdir (self.__download_folder)
         file = list(filter (lambda name: "done" not in name and ".xlsx" in name and ".xlsx#" not in name, download_files))[0]
@@ -188,7 +187,7 @@ class TwitterScraper (Web_scraping):
         logger.info ("\nSaving summary file...")
 
         # Open excel file
-        file_path = f"{self.__download_folder}\\all.xlsx"
+        file_path = f"{self.__download_folder}\\combined_data.xlsx"
         spreadsheet = SS_manager (file_path) 
         spreadsheet.create_get_sheet ("Followers")
         spreadsheet.write_data (self.__followers_data)
